@@ -4,6 +4,7 @@ import api.models.Pet;
 import api.testdata.PetTestDataBuilder;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -13,6 +14,7 @@ import static java.net.HttpURLConnection.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Tag("smoke")
 public class PetStoreApiTests extends BaseApiTest {
 
     @Test
