@@ -1,109 +1,146 @@
 package api.tests;
 
-
-import api.client.PetApiClient;
 import api.models.Pet;
 import api.testdata.PetTestDataBuilder;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static io.qameta.allure.Allure.step;
+import static java.net.HttpURLConnection.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class PetStoreApiTests {
-
-    private PetApiClient petApiClient;
-
-    @BeforeEach
-    void setUp() {
-        petApiClient = new PetApiClient();
-    }
+public class PetStoreApiTests extends BaseApiTest {
 
     @Test
-    @DisplayName("Test 1: verify successful creation of a pet")
+    @DisplayName("Test 1: Verify successful creation of a pet")
     void testCreateNewPet_Success() {
-        Pet newPet = PetTestDataBuilder.createDefaultPet();
+        Pet newPet = step("GIVEN: Prepare test pet data", PetTestDataBuilder::createDefaultPet);
 
-        Response response = petApiClient.createPet(newPet);
+        Pet createdPet = step("WHEN: Pet is created via API", () -> createTestPet(newPet));
 
-        response.then()
-                .statusCode(200)
-                .body("id", notNullValue())
-                .body("name", equalTo(newPet.getName()))
-                .body("status", equalTo(newPet.getStatus()))
-                .body("name", equalTo(newPet.getName()));
-
-        Pet createdPet = response.as(Pet.class);
-        assertNotNull(createdPet.getId(), "ID should be set up");
+        step("THEN: Verify created pet has correct data", () -> {
+            assertAll("Pet Creation Validations",
+                    () -> assertNotNull(createdPet.getId(), "ID should not be null"),
+                    () -> assertEquals(newPet.getName(), createdPet.getName(), "Name should match"),
+                    () -> assertEquals(newPet.getStatus(), createdPet.getStatus(), "Status should match"),
+                    () -> assertNotNull(createdPet.getCategory(), "Category should be present")
+            );
+        });
     }
 
     @Test
-    @DisplayName("Test 2: verify get pet by id")
+    @DisplayName("Test 2: Verify get pet by id")
     void testGetPetById_Success() {
-        Pet newPet = PetTestDataBuilder.createPetWithName("Buddy");
-        Response createResponse = petApiClient.createPet(newPet);
-        long petId = createResponse.jsonPath().getLong("id");
+        Pet createdPet = step("GIVEN: Pet exists in the system", () ->
+                createTestPet(PetTestDataBuilder.createPetWithName("Buddy"))
+        );
 
-        Response response = petApiClient.getPetById(petId);
+        Response response = step("WHEN: Get pet by ID", () -> petApiClient.getPetById(createdPet.getId()));
 
-        response.then()
-                .statusCode(200)
-                .body("id", equalTo((int) petId))
-                .body("name", equalTo(newPet.getName()));
+        step("THEN: Verify response contains correct pet data", () -> {
+            response.then()
+                    .statusCode(HTTP_OK)
+                    .body("id", equalTo(createdPet.getId().intValue()))
+                    .body("name", equalTo(createdPet.getName()));
+        });
     }
 
     @Test
-    @DisplayName("Test 3: verify update of the existing pet")
+    @DisplayName("Test 3: Verify update of the existing pet")
     void testUpdateExistingPet_Success() {
+        Pet createdPet = step("GIVEN: Pet with 'available' status exists", () ->
+                createTestPet(PetTestDataBuilder.createPetWithStatus("available"))
+        );
 
-        Pet originalPet = PetTestDataBuilder.createPetWithStatus("available");
-        Response createResponse = petApiClient.createPet(originalPet);
-        Pet createdPet = createResponse.as(Pet.class);
+        Response updateResponse = step("WHEN: Pet name and status are updated", () -> {
+            createdPet.setName("Updated Name");
+            createdPet.setStatus("sold");
+            return petApiClient.updatePet(createdPet);
+        });
 
-        createdPet.setName("Updated Name");
-        createdPet.setStatus("sold");
+        step("THEN: Verify pet was updated successfully", () -> {
+            updateResponse.then()
+                    .statusCode(HTTP_OK)
+                    .body("name", equalTo("Updated Name"))
+                    .body("status", equalTo("sold"));
+        });
+    }
 
-        Response updateResponse = petApiClient.updatePet(createdPet);
+    @ParameterizedTest
+    @ValueSource(strings = {"available", "pending", "sold"})
+    @DisplayName("Test 4: Verify pet search by different statuses")
+    void testFindPetsByStatus_DifferentStatuses(String status) {
+        step("GIVEN: Pet with status '" + status + "' exists", () ->
+                createTestPet(PetTestDataBuilder.createPetWithStatus(status))
+        );
 
-        updateResponse.then()
-                .statusCode(200)
-                .body("name", equalTo("Updated Name"))
-                .body("status", equalTo("sold"));
+        Response response = step("WHEN: Search pets by status '" + status + "'", () ->
+                petApiClient.getPetsByStatus(status)
+        );
+
+        step("THEN: Verify all returned pets have correct status", () -> {
+            response.then()
+                    .statusCode(HTTP_OK)
+                    .body("$", not(empty()))
+                    .body("status", everyItem(equalTo(status)));
+        });
     }
 
     @Test
-    @DisplayName("Test 4: verify pet search by status")
-    void testFindPetsByStatus_ReturnsMultiplePets() {
-        String status = "available";
-        petApiClient.createPet(PetTestDataBuilder.createPetWithStatus(status));
-        petApiClient.createPet(PetTestDataBuilder.createPetWithStatus(status));
-
-        Response response = petApiClient.getPetsByStatus(status);
-
-        response.then()
-                .statusCode(200)
-                .body("$", not(empty()))
-                .body("status", everyItem(equalTo(status)));
-
-        assertFalse(response.jsonPath().getList("$").isEmpty(), "Should return at least one pet");
-    }
-
-    @Test
-    @DisplayName("Test 5: verify pet delete")
+    @DisplayName("Test 5: Verify pet delete")
     void testDeletePet_Success() {
-        Pet newPet = PetTestDataBuilder.createDefaultPet();
-        Response createResponse = petApiClient.createPet(newPet);
-        long petId = createResponse.jsonPath().getLong("id");
+        Pet createdPet = step("GIVEN: Pet exists in the system", () ->
+                createTestPet(PetTestDataBuilder.createDefaultPet())
+        );
 
-        Response deleteResponse = petApiClient.deletePet(petId);
+        long petId = createdPet.getId();
 
-        deleteResponse.then()
-                .statusCode(200);
+        Response deleteResponse = step("WHEN: Pet is deleted", () -> petApiClient.deletePet(petId));
 
-        Response getResponse = petApiClient.getPetById(petId);
-        getResponse.then()
-                .statusCode(404);
+        step("THEN: Verify pet was deleted successfully", () -> verifyStatusCode(deleteResponse, HTTP_OK));
+
+        step("AND: Pet cannot be found anymore", () -> {
+            Response getResponse = petApiClient.getPetById(petId);
+            verifyStatusCode(getResponse, HTTP_NOT_FOUND);
+        });
+        createdPetIds.remove(petId);
+    }
+
+    @Test
+    @DisplayName("Test 6: Verify error when getting non-existent pet")
+    void testGetPetById_NotFound() {
+        long nonExistentId = 999999999L;
+
+        Response response = step("WHEN: Try to get pet with non-existent ID", () ->
+                petApiClient.getPetById(nonExistentId)
+        );
+
+        step("THEN: Verify 404 error is returned with appropriate message", () -> {
+            response.then()
+                    .statusCode(HTTP_NOT_FOUND)
+                    .body("message", containsString("Pet not found"));
+        });
+    }
+
+    @Test
+    @DisplayName("Test 7: Verify validation error for invalid pet data")
+    void testCreatePet_InvalidData() {
+        Pet invalidPet = step("GIVEN: Prepare pet with invalid data (empty name)", () ->
+                PetTestDataBuilder.createPetWithName("")
+        );
+
+        Response response = step("WHEN: Try to create pet with invalid data", () ->
+                petApiClient.createPet(invalidPet)
+        );
+
+        step("THEN: Verify validation error is returned", () -> {
+            response.then()
+                    .statusCode(HTTP_BAD_REQUEST)
+                    .body("message", notNullValue());
+        });
     }
 }

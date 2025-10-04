@@ -2,57 +2,92 @@ package api.testdata;
 
 import api.models.Pet;
 import com.github.javafaker.Faker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.qameta.allure.Allure.step;
-
 public class PetTestDataBuilder {
 
     private static final Faker faker = new Faker();
+    private static final Logger logger = LoggerFactory.getLogger(PetTestDataBuilder.class);
 
     public static Pet createDefaultPet() {
-        return step("Generate default pet data", () -> {
-            String petName = faker.dog().name();
-            String categoryName = faker.animal().name();
+        String petName = faker.dog().name();
+        String categoryName = faker.animal().name();
 
-            return Pet.builder()
-                    .id(generateRandomId())
-                    .category(Pet.Category.builder()
-                            .id((long) faker.number().numberBetween(1, 100))
-                            .name(categoryName)
-                            .build())
-                    .name(petName)
-                    .photoUrls(generateRandomPhotoUrls())
-                    .tags(generateRandomTags())
-                    .status("available")
-                    .build();
-        });
+        logger.debug("Creating default pet with name: {}", petName);
+
+        return Pet.builder()
+                .id(generateRandomId())
+                .category(Pet.Category.builder()
+                        .id((long) faker.number().numberBetween(1, 100))
+                        .name(categoryName)
+                        .build())
+                .name(petName)
+                .photoUrls(generateRandomPhotoUrls())
+                .tags(generateRandomTags())
+                .status("available")
+                .build();
     }
 
     public static Pet createPetWithName(String name) {
-        return step("Set pet name: " + name, () -> {
-            Pet pet = createDefaultPet();
-            pet.setName(name);
-            return pet;
-        });
+        logger.debug("Creating pet with custom name: {}", name);
+
+        return Pet.builder()
+                .id(generateRandomId())
+                .category(Pet.Category.builder()
+                        .id((long) faker.number().numberBetween(1, 100))
+                        .name(faker.animal().name())
+                        .build())
+                .name(name)
+                .photoUrls(generateRandomPhotoUrls())
+                .tags(generateRandomTags())
+                .status("available")
+                .build();
     }
 
     public static Pet createPetWithStatus(String status) {
-        return step("Set pet status: " + status, () -> {
-            Pet pet = createDefaultPet();
-            pet.setStatus(status);
-            return pet;
-        });
+        logger.debug("Creating pet with status: {}", status);
+
+        return Pet.builder()
+                .id(generateRandomId())
+                .category(Pet.Category.builder()
+                        .id((long) faker.number().numberBetween(1, 100))
+                        .name(faker.animal().name())
+                        .build())
+                .name(faker.dog().name())
+                .photoUrls(generateRandomPhotoUrls())
+                .tags(generateRandomTags())
+                .status(status)
+                .build();
     }
 
     public static Pet createMinimalPet() {
-        return step("Generate minimal pet data", () -> Pet.builder()
+        logger.debug("Creating minimal pet");
+
+        return Pet.builder()
                 .name(faker.dog().name())
                 .photoUrls(List.of(faker.internet().image()))
-                .build());
+                .build();
+    }
+
+    public static Pet createCustomPet(String name, String status, String categoryName) {
+        logger.debug("Creating custom pet: name='{}', status='{}', category='{}'", name, status, categoryName);
+
+        return Pet.builder()
+                .id(generateRandomId())
+                .category(Pet.Category.builder()
+                        .id((long) faker.number().numberBetween(1, 100))
+                        .name(categoryName)
+                        .build())
+                .name(name)
+                .photoUrls(generateRandomPhotoUrls())
+                .tags(generateRandomTags())
+                .status(status)
+                .build();
     }
 
     private static Long generateRandomId() {
@@ -74,21 +109,5 @@ public class PetTestDataBuilder {
                         .name(faker.dog().memePhrase().toLowerCase().replace(" ", "_"))
                         .build())
                 .collect(Collectors.toList());
-    }
-
-    public static Pet createCustomPet(String name, String status, String categoryName) {
-        return step(
-                String.format("Create custom pet: name='%s', status='%s', category='%s'", name, status, categoryName),
-                () -> Pet.builder()
-                        .id(generateRandomId())
-                        .category(Pet.Category.builder()
-                                .id((long) faker.number().numberBetween(1, 100))
-                                .name(categoryName)
-                                .build())
-                        .name(name)
-                        .photoUrls(generateRandomPhotoUrls())
-                        .tags(generateRandomTags())
-                        .status(status)
-                        .build());
     }
 }

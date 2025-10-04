@@ -1,5 +1,6 @@
 package api.client;
 
+import io.qameta.allure.Step;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
@@ -21,6 +22,7 @@ public abstract class BaseApiClient {
                 .build();
     }
 
+    @Step("GET {endpoint}")
     protected Response get(String endpoint) {
         return RestAssured.given()
                 .spec(requestSpec)
@@ -28,6 +30,7 @@ public abstract class BaseApiClient {
                 .get(endpoint);
     }
 
+    @Step("POST {endpoint}")
     protected Response post(String endpoint, Object body) {
         return RestAssured.given()
                 .spec(requestSpec)
@@ -36,6 +39,7 @@ public abstract class BaseApiClient {
                 .post(endpoint);
     }
 
+    @Step("PUT {endpoint}")
     protected Response put(String endpoint, Object body) {
         return RestAssured.given()
                 .spec(requestSpec)
@@ -44,6 +48,7 @@ public abstract class BaseApiClient {
                 .put(endpoint);
     }
 
+    @Step("DELETE {endpoint}")
     protected Response delete(String endpoint) {
         return RestAssured.given()
                 .spec(requestSpec)
@@ -51,6 +56,7 @@ public abstract class BaseApiClient {
                 .delete(endpoint);
     }
 
+    @Step("DELETE {endpoint} with API key")
     protected Response delete(String endpoint, String apiKey) {
         return RestAssured.given()
                 .spec(requestSpec)
