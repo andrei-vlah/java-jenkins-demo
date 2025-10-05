@@ -7,6 +7,7 @@ import config.ConfigProvider;
 import io.qameta.allure.selenide.AllureSelenide;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.openqa.selenium.chrome.ChromeOptions;
 
 
 public class BaseWebTest {
@@ -25,6 +26,22 @@ public class BaseWebTest {
         Configuration.browserSize = ConfigProvider.getWebConfig().browserWidth() + "x" + 
                                      ConfigProvider.getWebConfig().browserHeight();
 
+        ChromeOptions chromeOptions = new ChromeOptions();
+        chromeOptions.addArguments(
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-software-rasterizer",
+                "--user-data-dir=/tmp/chrome-user-data-" + System.currentTimeMillis() + "-" + Thread.currentThread().getId(),
+                "--disable-extensions",
+                "--disable-infobars"
+        );
+
+        if (ConfigProvider.getWebConfig().isHeadless()) {
+            chromeOptions.addArguments("--headless=new");
+        }
+
+        Configuration.browserCapabilities = chromeOptions;
         if (ConfigProvider.getWebConfig().remoteUrl() != null && 
             !ConfigProvider.getWebConfig().remoteUrl().isEmpty()) {
             Configuration.remote = ConfigProvider.getWebConfig().remoteUrl();
