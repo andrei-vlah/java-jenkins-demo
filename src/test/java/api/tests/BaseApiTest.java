@@ -2,8 +2,13 @@ package api.tests;
 
 import api.client.PetApiClient;
 import api.models.Pet;
+import config.ConfigProvider;
 import io.qameta.allure.Step;
+import io.restassured.RestAssured;
+import io.restassured.filter.log.RequestLoggingFilter;
+import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.response.Response;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
@@ -14,10 +19,19 @@ import java.util.List;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
-public abstract class BaseApiTest {
+abstract class BaseApiTest {
     protected PetApiClient petApiClient;
     protected List<Long> createdPetIds;
     private static final Logger logger = LoggerFactory.getLogger(BaseApiTest.class);
+
+    @BeforeAll
+    public static void setUpApi() {
+        RestAssured.baseURI = ConfigProvider.getApiConfig().baseUrl();
+
+        if (ConfigProvider.getApiConfig().logRequests()) {
+            RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter());
+        }
+    }
 
     @BeforeEach
     void baseSetUp() {

@@ -1,5 +1,6 @@
 package api.client;
 
+import config.ConfigProvider;
 import io.qameta.allure.Step;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
@@ -10,7 +11,7 @@ import io.restassured.specification.RequestSpecification;
 
 public abstract class BaseApiClient {
 
-    protected static final String BASE_URL = "https://petstore.swagger.io/v2";
+    protected static final String BASE_URL = ConfigProvider.getApiConfig().baseUrl();
     protected RequestSpecification requestSpec;
 
     public BaseApiClient() {
