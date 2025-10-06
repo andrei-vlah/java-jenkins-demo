@@ -2,6 +2,8 @@ package api.tests;
 
 import api.models.Pet;
 import api.testdata.PetTestDataBuilder;
+import io.qameta.allure.Epic;
+import io.qameta.allure.Feature;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -14,7 +16,10 @@ import static java.net.HttpURLConnection.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+@Epic("API Tests")
+@Feature("PET CRUD")
 @Tag("smoke")
+@Tag("api")
 public class PetStoreApiTests extends BaseApiTest {
 
     @Test

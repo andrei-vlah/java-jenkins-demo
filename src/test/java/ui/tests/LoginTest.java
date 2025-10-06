@@ -1,6 +1,7 @@
 package ui.tests;
 
 import io.qameta.allure.*;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import pages.LoginPage;
 import pages.MainPage;
@@ -9,6 +10,8 @@ import static com.codeborne.selenide.Condition.text;
 
 @Epic("UI Tests")
 @Feature("Authentication")
+@Tag("smoke")
+@Tag("ui")
 public class LoginTest extends BaseWebTest {
 
     private final LoginPage loginPage = new LoginPage();

@@ -3,11 +3,9 @@ package pages;
 import com.codeborne.selenide.SelenideElement;
 import io.qameta.allure.Step;
 
-import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.open;
 
-public class LoginPage {
+public class LoginPage extends BasePage<LoginPage> {
 
     private final SelenideElement usernameInput = $("#user-name");
     private final SelenideElement passwordInput = $("#password");
@@ -16,25 +14,24 @@ public class LoginPage {
 
     @Step("Open Login page")
     public LoginPage openPage() {
-        open("/");
-        return this;
+        return openPage("/");
     }
 
     @Step("Enter username: {username}")
     public LoginPage enterUsername(String username) {
-        usernameInput.shouldBe(visible).setValue(username);
+        setValue(usernameInput, username);
         return this;
     }
 
     @Step("Enter password")
     public LoginPage enterPassword(String password) {
-        passwordInput.shouldBe(visible).setValue(password);
+        setValue(passwordInput, password);
         return this;
     }
 
     @Step("Click Login button")
     public void clickLoginButton() {
-        loginButton.shouldBe(visible).click();
+        click(loginButton);
     }
 
     @Step("Perform login with username: {username}")
@@ -46,6 +43,6 @@ public class LoginPage {
 
     @Step("Verify Error message is displayed")
     public SelenideElement getErrorMessage() {
-        return errorMessage.shouldBe(visible);
+        return shouldBeVisible(errorMessage);
     }
 }
